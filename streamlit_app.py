@@ -18,53 +18,42 @@ def get_input_data():
 
     return data_file
 
-def display_map(df, technology):
+def display_map(df, variable, variable_name, count=None):
     map = folium.Map(location=[10, 0], zoom_start=1, control_scale=True, scrollWheelZoom=True, tiles='CartoDB positron')
-    df = df.rename(columns={"Country code":"iso3_code"})
-
+    df = df.rename(columns={"ISO3":"iso3_code"})
+    if count is not None:
+        threshold_scale = [1, 5, 15, 50, 100, max(df[variable])]
+    else:
+        threshold_scale=None
     choropleth = folium.Choropleth(
         geo_data='./DATA/country_boundaries.geojson',
         data=df,
-        columns=('iso3_code', "WACC"),
+        columns=('iso3_code', variable),
         key_on='feature.properties.iso3_code',
         line_opacity=0.8,
         highlight=True,
         fill_color="YlGnBu",
         nan_fill_color = "grey",
-        legend_name="Weighted Average Cost of Capital (%)"
+        legend_name="Datapoints",
+        threshold_scale=threshold_scale,
     )
     choropleth.geojson.add_to(map)
 
-
     df_indexed = df.set_index('iso3_code')
-    df_indexed = df_indexed.dropna(subset="WACC")
+    df_indexed = df_indexed.dropna(subset=variable)
+    df_indexed = df_indexed[~df_indexed.index.duplicated(keep='first')]  # Remove duplicates
+
     for feature in choropleth.geojson.data['features']:
         iso3_code = feature['properties']['iso3_code']
-        feature['properties'][technology + ' WACC'] = (
-        f"{df_indexed.loc[iso3_code, 'WACC']:0.2f}%" if iso3_code in df_indexed.index else "N/A"
-    )
-        feature['properties']["Debt_Share"] = (
-        f"{df_indexed.loc[iso3_code, 'Debt_Share']:0.2f}%" if iso3_code in df_indexed.index else "N/A"
-    )
-        feature['properties']["Equity_Cost"] = (
-        f"{df_indexed.loc[iso3_code, 'Equity_Cost']:0.2f}%" if iso3_code in df_indexed.index else "N/A"
-    )
-        feature['properties']["Debt_Cost"] = (
-        f"{df_indexed.loc[iso3_code, 'Debt_Cost']:0.2f}%" if iso3_code in df_indexed.index else "N/A"
-    )
-        feature['properties']["Tax_Rate"] = (
-        f"{df_indexed.loc[iso3_code, 'Tax_Rate']:0.2f}%" if iso3_code in df_indexed.index else "N/A"
-    )
-        #feature['properties']['GDP'] = 'GDP: ' + '{:,}'.format(df_indexed.loc[country_name, 'State Pop'][0]) if country_name in list(df_indexed.index) else ''
+        feature['properties'][variable] = (
+            f"{df_indexed.loc[iso3_code, variable]:0.0f}" if iso3_code in df_indexed.index else "N/A"
+        )
 
-    #choropleth.geojson.add_child(
-        #folium.features.GeoJsonTooltip(['english_short'], labels=False)
-    #)
 
     choropleth.geojson.add_child(
     folium.features.GeoJsonTooltip(
-        fields=['english_short', technology + ' WACC', "Equity_Cost", "Debt_Cost", "Debt_Share", "Tax_Rate"],  # Display these fields
-        aliases=["Country:", technology + ":", "Cost of Equity:", "Cost of Debt:", "Debt Share:", "Tax_Rate"],         # Display names for the fields
+        fields=['english_short', variable],  # Display these fields
+        aliases=["Country:", variable_name],         # Display names for the fields
         localize=True,
         style="""
         background-color: #F0EFEF;
@@ -156,40 +145,42 @@ def plot_ranking_table(raw_df, country_codes):
 
     st.write(chart_with_double_x_axis)
 
-def display_count_map(df):
+def display_count_map(df, variable, variable_name, count=None):
     map = folium.Map(location=[10, 0], zoom_start=1, control_scale=True, scrollWheelZoom=True, tiles='CartoDB positron')
     df = df.rename(columns={"ISO3":"iso3_code"})
-
+    if count is not None:
+        threshold_scale = [1, 5, 15, 50, 100, max(df[variable])]
+    else:
+        threshold_scale=None
     choropleth = folium.Choropleth(
         geo_data='./DATA/country_boundaries.geojson',
         data=df,
-        columns=('iso3_code', "count"),
+        columns=('iso3_code', variable),
         key_on='feature.properties.iso3_code',
         line_opacity=0.8,
         highlight=True,
         fill_color="YlGnBu",
         nan_fill_color = "grey",
         legend_name="Datapoints",
-        threshold_scale=[1, 5, 15, 50, 100, max(df['count'])],
+        threshold_scale=threshold_scale,
     )
     choropleth.geojson.add_to(map)
 
-    print(f"Minimum count: {df['count'].min()}, Maximum count: {df['count'].max()}")
     df_indexed = df.set_index('iso3_code')
-    df_indexed = df_indexed.dropna(subset="count")
+    df_indexed = df_indexed.dropna(subset=variable)
     df_indexed = df_indexed[~df_indexed.index.duplicated(keep='first')]  # Remove duplicates
 
     for feature in choropleth.geojson.data['features']:
         iso3_code = feature['properties']['iso3_code']
-        feature['properties']['count'] = (
-            f"{df_indexed.loc[iso3_code, 'count']:0.0f}" if iso3_code in df_indexed.index else "N/A"
+        feature['properties'][variable] = (
+            f"{df_indexed.loc[iso3_code, variable]:0.0f}" if iso3_code in df_indexed.index else "N/A"
         )
 
 
     choropleth.geojson.add_child(
     folium.features.GeoJsonTooltip(
-        fields=['english_short', "count"],  # Display these fields
-        aliases=["Country:", "Datapoints:"],         # Display names for the fields
+        fields=['english_short', variable],  # Display these fields
+        aliases=["Country:", variable_name],         # Display names for the fields
         localize=True,
         style="""
         background-color: #F0EFEF;
@@ -242,18 +233,50 @@ style_image = 'display: block; margin-left: auto; margin-right: auto;'
 
 st.markdown(f"<h1 style='{style_heading}'>The Global and National Energy Systems Techno-Economic (GNESTE) Database</h1>", unsafe_allow_html=True)
 st.header("")
-tab1, tab2, tab3, tab4, tab5= st.tabs(["🌐 Global Coverage", "🏭 Technology", "ℹ️ Benchmarking Tool", "🔭 Projections", "📝 About"])
+tab1, tab2, tab3, tab4, tab5= st.tabs(["🌐 Global Coverage", "🏭 Technology CAPEX", "ℹ️ Benchmarking Tool", "🔭 Projections", "📝 About"])
 
+print(gneste_datafile)
 
 
 with tab1:
     st.header("Data Coverage")
-    display_count_map(country_counts)
+
+    # Create map for data counts
+    display_count_map(country_counts, "count", "Datapoints:", count="True")
 with tab2:
-    st.header("Global Ranges")
+    st.header("Mean National CAPEX")
+    technology = st.selectbox("Technology", ["Solar", "Wind", "Hydro", "Nuclear","Batteries", "Gas",  "Coal"], key="CAPEX_technology")
+    start_year, end_year = st.select_slider(
+    "Select a range of years",
+    options=["2020", "2021", "2022", "2023", "2024"],
+    value=("2020", "2024"))
+
+
+    # Select the technology and year
+    gneste_extract = gneste_datafile.loc[gneste_datafile["Technology"] == technology].loc[gneste_datafile['Code']=="CAPEX"]
+    print(gneste_extract)
+
+    # Select the corresponding years
+    years_range = np.arange(int(start_year), int(end_year)+1, 1).tolist()
+    variables = years_range.insert(0, "ISO3")
+    list_string = map(str, years_range)
+    years_data = gneste_extract[list_string]
+    melted_years = pd.melt(years_data, id_vars=['ISO3'])
+
+    mean_data = melted_years.groupby(['ISO3']).mean(numeric_only=True).rename(columns={"value":"mean"}).reset_index()
+    #min_data = melted_years.groupby(['ISO3']).min(numeric_only=True).rename(columns={"value":"min"})
+    #max_data = melted_years.groupby(['ISO3']).max(numeric_only=True).rename(columns={"value":"max"})
+
+    #combined_df = pd.merge(mean_data, min_data, how="left", on="ISO3")
+    #combined_df = pd.merge(combined_df, max_data, how="left", on="ISO3")
+    #st.write(combined_df)
+    display_map(mean_data, "mean", "US$/kW (2023):")
+    
 
 with tab3:
     st.header("Comparison to International Ranges")
+    technology_bench = st.selectbox("Technology", ["Solar", "Wind", "Hydro", "Nuclear","Batteries", "Gas",  "Coal"])
+    year_bench = st.selectbox("Year", ["2020", "2021", "2022", "2023"])
 with tab4:
     st.header("XX")
 with tab5:
