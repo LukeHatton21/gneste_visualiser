@@ -4,6 +4,9 @@ import pandas as pd
 import numpy as np
 from streamlit_folium import st_folium
 import altair as alt
+import plotly.express as px
+from scipy import stats
+
 
 # Data Source for map: https://public.opendatasoft.com/explore/embed/dataset/world-administrative-boundaries-countries/table/
 @st.cache_resource
@@ -216,7 +219,21 @@ def plot_comparison_chart(df):
         order=alt.Order('Factor:O', sort="ascending"),  # Color bars by category
 ).properties(width=700)
     st.write(chart)
+
+def create_benchmark_boxplot(data, assumption, label):
+
+    # Extract values from the data
+    y_max = np.nanmax(data['value'])
+    renamed_data = data.rename(columns={"value":label})
+
+    # Create a boxplot
+    fig = px.box(renamed_data, x="Continent", y=label, points="all")
+    fig.add_hline(y=assumption, line_width=3, line_dash="dash", line_color="red")
+    fig.update_yaxes(range=[0, y_max])
     
+     
+    # Add in the assumption as a red line     
+    event = st.plotly_chart(fig, key="iris", on_select="rerun")
 
 ## Read in Datafile
 gneste_datafile = get_input_data()
@@ -289,25 +306,26 @@ with tab3:
 
     # Get units 
     units = gneste_benchmark['Unit'].values[0]
-    st.write(units)
+    
     # Input assumption for testing
-
-    number = st.number_input("Input Your Assumption", value=1000)
-    st.write(f"Your assumption is **{str(number)}** " + f**{)
+    assumption = st.number_input("Input Your Assumption", value=1000)
+ 
 
     # Extract given years
     years_range_bench = np.arange(int(start_year), int(end_year)+1, 1).tolist()
-    variables_bench  = years_range.insert(0, "ISO3")
-    list_string_bench  = map(str, years_range_bench )
+    variables_bench  = years_range_bench.insert(0, "Continent")
+    list_string_bench  = map(str, years_range_bench)
     benchmark_data = gneste_benchmark[list_string_bench].dropna(axis=0, how="all")
-    st.write(benchmark_data)
 
     # Melt data and aggregate
-    melted_benchmark = pd.melt(benchmark_data).dropna(axis=0, how="any")
-    st.write(melted_benchmark)
+    melted_benchmark = pd.melt(benchmark_data, id_vars=['Continent']).dropna(axis=0, how="any")
+
+    # Create assumption marking
+    percentile = stats.percentileofscore(melted_benchmark['value'].values, assumption)
+    st.write(f"Your assumption of **{str(assumption)}** " + f"**{units}** is at the {percentile:0.2f}% percentile of the range of data collected")
 
     # Create a boxplot
-    
+    create_benchmark_boxplot(melted_benchmark, assumption, f"{parameter} ({units})")
 
 
 with tab4:
