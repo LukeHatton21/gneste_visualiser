@@ -275,8 +275,41 @@ with tab2:
 
 with tab3:
     st.header("Comparison to International Ranges")
-    technology_bench = st.selectbox("Technology", ["Solar", "Wind", "Hydro", "Nuclear","Batteries", "Gas",  "Coal"])
-    year_bench = st.selectbox("Year", ["2020", "2021", "2022", "2023"])
+    technology_bench = st.selectbox("Technology", ["Solar", "Wind", "Hydro", "Nuclear","Batteries", "Gas",  "Coal"], index=0)
+    start_year_bench, end_year_bench = st.select_slider(
+    "Select a range of years",
+    options=["2020", "2021", "2022", "2023", "2024"],
+    value=("2020", "2024"), key="BENCH_YEAR")
+    parameter = st.selectbox("Variable", ["CAPEX", "OPEX_T", "OPEX_F", "OPEX_V", "WACC", 
+    "LIFETIME", "BUILDTIME", "FUEL_PRICE", "EFFICIENCY"], index=0)
+
+
+    # Extract benchmarking data
+    gneste_benchmark = gneste_datafile.loc[gneste_datafile["Technology"] == technology_bench].loc[gneste_datafile['Code']==parameter]
+
+    # Get units 
+    units = gneste_benchmark['Unit'].values[0]
+    st.write(units)
+    # Input assumption for testing
+
+    number = st.number_input("Input Your Assumption", value=1000)
+    st.write(f"Your assumption is **{str(number)}** " + f**{)
+
+    # Extract given years
+    years_range_bench = np.arange(int(start_year), int(end_year)+1, 1).tolist()
+    variables_bench  = years_range.insert(0, "ISO3")
+    list_string_bench  = map(str, years_range_bench )
+    benchmark_data = gneste_benchmark[list_string_bench].dropna(axis=0, how="all")
+    st.write(benchmark_data)
+
+    # Melt data and aggregate
+    melted_benchmark = pd.melt(benchmark_data).dropna(axis=0, how="any")
+    st.write(melted_benchmark)
+
+    # Create a boxplot
+    
+
+
 with tab4:
     st.header("XX")
 with tab5:
