@@ -250,7 +250,7 @@ style_image = 'display: block; margin-left: auto; margin-right: auto;'
 
 st.markdown(f"<h1 style='{style_heading}'>The Global and National Energy Systems Techno-Economic (GNESTE) Database</h1>", unsafe_allow_html=True)
 st.header("")
-tab1, tab2, tab3, tab4, tab5= st.tabs(["🌐 Global Coverage", "🏭 Technology CAPEX", "ℹ️ Benchmarking Tool", "🔭 Projections", "📝 About"])
+tab1, tab2, tab3, tab4, tab5= st.tabs(["🌐 Data Coverage", "🏭 Technology CAPEX", "ℹ️ Benchmarking Tool", "🔎Data Mapping", "📝 About"])
 
 print(gneste_datafile)
 
@@ -308,7 +308,7 @@ with tab3:
     units = gneste_benchmark['Unit'].values[0]
     
     # Input assumption for testing
-    assumption = st.number_input("Input Your Assumption", value=1000)
+    assumption = st.number_input("Assumption for benchmarking", value=1000)
  
 
     # Extract given years
@@ -322,15 +322,34 @@ with tab3:
 
     # Create assumption marking
     percentile = stats.percentileofscore(melted_benchmark['value'].values, assumption)
-    st.write(f"Your assumption of **{str(assumption)}** " + f"**{units}** is at the {percentile:0.2f}% percentile of the range of data collected")
+    st.write(f"The assumption of **{str(assumption)}** " + f"**{units}** is at the {percentile:0.2f}% percentile of the data collected")
 
     # Create a boxplot
     create_benchmark_boxplot(melted_benchmark, assumption, f"{parameter} ({units})")
 
-
 with tab4:
-    st.header("XX")
+    st.header("Data Mapping")
+    
+    # Get data table
+    data_mapping = pd.read_csv("./DATA/GNESTE_Mapping.csv")
+    st.table(data_mapping.set_index(data_mapping.columns[0]))
 with tab5:
     st.header("About")
+    st.write("Data and assumptions relating to the cost and performance of electricity generation and storage technologies are key input parameters to energy system modelling tools."+
+             "Despite the ubiquity and importance of these parameters, there is no standardised database which collates the variety of values from across the literature, so modellers" +
+             "must collect them independently each time they populate or update model inputs, leading to duplicated efforts and inconsistencies which can profoundly influence model results." +
+             "Technology cost and performance also varies between countries, regions and over time, meaning that data must be country- or region-specific and frequently updated.")
+    st.write("The GNESTE database aims to address these challenges by collating historical, current, and future cost and performance data and assumptions for the six most prominent "+
+             "electricity generation technologies; coal, gas, hydroelectric, nuclear, solar photovoltaic (PV) and wind power, which together accounted for over 92 % of installed generation capacity in 2022.")
     st.header("Methods")
+    st.write("The GNESTE database is global in scope but with regional and national specificity, covers the years 2015 through to 2050, and spans 5518 datapoints collated from 56 sources. " +
+             "The full list of sources alongside the academic write up of the collation can be found in Data in Brief: https://doi.org/10.1016/j.dib.2024.110669.")
+    st.header("Funding")
+    st.write("The GNESTE database was created using funding from the South African-driven Modeling Capacity and Communication (ADMeCC) project" +
+             " and the Climate Compatible Growth (CCG) programme. Both CCG and ADMeCC are funded by the Foreign, Commonwealth and Development Office (FCDO) of the UK government." +
+             "The CCG programme brings together leading research organisations and is led out of the STEER centre, Loughborough University.")
+    st.write("The GNESTE visualisation here was developed by Luke Hatton at Imperial College London. Contact by email: l.hatton23@imperial.ac.uk")
     st.header("License and Data Use Permissions")
+    st.write("The data available here is licensed as Creative Commons Attribution-NonCommercial International (CC BY-NC 4.0), which means you are free to copy, " + 
+             "redistribute and adapt it for non-commercial purposes, provided you give appropriate credit. If you wish to use the data for commercial purposes, " +
+             "please get in touch to discuss commercial license pricing.")

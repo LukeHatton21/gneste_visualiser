@@ -1,0 +1,10 @@
+﻿Parameter,Code,Unit,Description
+Capital Cost,CAPEX,USD/kW,Overnight cost of building the plant (excluding cost escalation and interest during construction) normalised by the rated capacity of the plant.
+Fixed O&M,OPEX_F,USD/kW/yr,"Operation and maintenance costs which are a function of a plant’s capacity, such as for labour and insurance"
+Variable O&M,OPEX_V,USD/MWh,"Operation and maintenance costs which are a function of operating hours, excluding fuel inputs."
+Total O&M,OPEX_T,USD/kW/yr or USD/MWh,"The sum of variable and fixed operating costs, excluding fuel inputs."
+Fuel Price,FUEL_PRICE,USD/MWh,"Cost of the fuel consumed, relative to the primary energy input (not including plant efficiency)"
+Efficiency,EFFICIENCY,%,"Share of the net calorific value of a plant’s fuel that is converted into electricity, net of plant self-consumption"
+Construction Time,BUILDTIME,Years,Time to complete the project from physical installation through to electricity generation. Excludes pre-construction stages such as planning and permitting.
+Lifetime,LIFETIME,Years,"Time a plant is expected to operate, excluding end-of-life extensions, over which the capital cost is amortised"
+Cost of Capital,WACC,%,"Weighted average cost of capital used for discounting, in real terms, reflecting the split between equity and debt investments."
