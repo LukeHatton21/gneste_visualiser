@@ -240,7 +240,6 @@ gneste_datafile = get_input_data()
 
 ## Get country data
 country_counts = gneste_datafile['Country'].value_counts().reset_index()
-print(country_counts)
 country_counts = pd.merge(country_counts, gneste_datafile[['Country', 'ISO3']], on="Country", how="left")
 
 
@@ -250,9 +249,8 @@ style_image = 'display: block; margin-left: auto; margin-right: auto;'
 
 st.markdown(f"<h1 style='{style_heading}'>The Global and National Energy Systems Techno-Economic (GNESTE) Database</h1>", unsafe_allow_html=True)
 st.header("")
-tab1, tab2, tab3, tab4, tab5= st.tabs(["🌐 Data Coverage", "🏭 Technology CAPEX", "ℹ️ Benchmarking Tool", "🔎Data Mapping", "📝 About"])
+tab1, tab2, tab3, tab4, tab5, tab6, tab7= st.tabs(["🌐 Coverage", "🏭Technology CAPEX", "📊Benchmarking", "🔎Data Mapping", "💻Upload", "📝Changelog", "ℹ️About"])
 
-print(gneste_datafile)
 
 
 with tab1:
@@ -271,7 +269,6 @@ with tab2:
 
     # Select the technology and year
     gneste_extract = gneste_datafile.loc[gneste_datafile["Technology"] == technology].loc[gneste_datafile['Code']=="CAPEX"]
-    print(gneste_extract)
 
     # Select the corresponding years
     years_range = np.arange(int(start_year), int(end_year)+1, 1).tolist()
@@ -334,6 +331,13 @@ with tab4:
     data_mapping = pd.read_csv("./DATA/GNESTE_Mapping.csv")
     st.table(data_mapping.set_index(data_mapping.columns[0]))
 with tab5:
+    st.header("Data Upload")
+    st.write("Currently a Work in Progress")
+with tab6:
+    st.header("Changelog")
+    changelog = pd.read_csv("./DATA/Changelog.csv")
+    st.table(changelog.set_index(changelog.columns[0]))
+with tab7:
     st.header("About")
     st.write("Data and assumptions relating to the cost and performance of electricity generation and storage technologies are key input parameters to energy system modelling tools."+
              "Despite the ubiquity and importance of these parameters, there is no standardised database which collates the variety of values from across the literature, so modellers" +
