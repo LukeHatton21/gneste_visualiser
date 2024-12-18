@@ -6,9 +6,24 @@ from streamlit_folium import st_folium
 import altair as alt
 import plotly.express as px
 from scipy import stats
+from github import Github
+from datetime import datetime
+import os
 
+# GitHub token and repository details
+REPO_NAME = "LukeHatton21/gneste_data"
 
 # Data Source for map: https://public.opendatasoft.com/explore/embed/dataset/world-administrative-boundaries-countries/table/
+@st.cache_resource
+def get_details():
+    with open('https://www.dropbox.com/scl/fi/diux1pan2w692rqpw5ol7/Github-Access-Code.rtf?rlkey=t97t2tqly3q3irfbij1i8fxc1&st=k3l2mtb4&dl=1', 'r') as file:
+        text = file.read()
+    token = text
+
+    return token
+
+
+
 @st.cache_resource
 def get_input_data():
     """ Import the original GNESTE datafile in a Pandas Dataframe format
@@ -235,6 +250,41 @@ def create_benchmark_boxplot(data, assumption, label):
     # Add in the assumption as a red line     
     event = st.plotly_chart(fig, key="iris", on_select="rerun")
 
+def upload_to_github(repository, new_file, commit_message):
+
+    """ Upload the updated GNESTE database to the specified Github repository
+    
+    Inputs:
+        repository: Repository name to upload to
+        github_token: Personal Access Token to use
+        altered_df: Updated dataframe with modifications to upload
+        commit_message: Commit message to use"""
+    
+    # Specify filename
+    file_name = "GNESTE_ALL.csv"
+
+    # Get Github locations and access token
+    token = get_details()
+    g = Github(token)
+    repo = g.get_repo(repository)
+    
+
+    # Get file content
+    content = new_file.to_csv(index=False)
+
+    # Upload updated file
+    try:
+        existing_file = repo.get_contents(file_name)
+        
+
+        # If it exists, update the file
+        repo.update_file(existing_file.path, commit_message,content, existing_file.sha)
+        st.success(f"Updated the GNESTE database")
+    except:
+        # If it doesn't exist, create a new file
+        repo.create_file(file_name, commit_message, content)
+        st.success(f"Uploaded new file to the repository")
+
 ## Read in Datafile
 gneste_datafile = get_input_data()
 
@@ -326,13 +376,92 @@ with tab3:
 
 with tab4:
     st.header("Data Mapping")
-    
     # Get data table
     data_mapping = pd.read_csv("./DATA/GNESTE_Mapping.csv")
     st.table(data_mapping.set_index(data_mapping.columns[0]))
 with tab5:
-    st.header("Data Upload")
-    st.write("Currently a Work in Progress")
+    st.header("Data Upload: WIP DO NOT USE")
+    st.write("Additional datapoints can be added to the GNESTE database here, either manually by specifying the corresponding parameters or through an upload of a CSV or Excel file")
+
+
+    # Get dataframe for updating
+    new_file = gneste_datafile
+
+    # Get date and time for commit message
+    now = datetime.now()
+    date_time = now.strftime("%m/%d/%Y, %H:%M:%S")
+
+
+
+
+
+    # File uploader
+    st.subheader("File Upload")
+    st.write("Uploaded file must be in CSV format and specify the following in its columns: Technology, Country, Variable, Unit, Category, Source, and Year")
+    uploaded_file = st.file_uploader("Choose a file to upload", type=["csv", "xlsx"])
+
+    if uploaded_file:
+        # Display the file name
+        st.write(f"Uploaded file: {uploaded_file.name}")
+
+        # Process the file as a DataFrame
+        try:
+            # Example: Loading as a DataFrame (assume CSV here, add other cases as needed)
+            if uploaded_file.name.endswith(".csv"):
+                df = pd.read_csv(uploaded_file)
+            elif uploaded_file.name.endswith(".xlsx"):
+                df = pd.read_excel(uploaded_file)
+            else:
+                st.error("Unsupported file format.")
+                df = None
+            
+            if df is not None:
+                
+                # Reset file pointer to read the raw content
+                uploaded_file.seek(0)
+                
+                # Read raw content to upload
+                raw_content = uploaded_file.read()
+
+                if st.button("Upload to GitHub"):
+                    try:
+                        # Upload the file to GitHub
+                        upload_to_github(REPO_NAME, new_file, date_time)
+                    except Exception as e:
+                        st.error(f"An error occurred: {e}")
+        except Exception as e:
+            st.error(f"An error occurred while processing the file: {e}")
+
+
+
+    # Manual upload
+    st.subheader("Manual Upload")
+    st.write("Specify the corresponding parameters:")
+    
+    technology_upload = st.multiselect("Technology", options=["Solar", "Wind", "Hydro", "Nuclear","Batteries", "Gas",  "Coal"])
+    country_upload = st.multiselect("Country", options=["United Kingdom", "United States"])
+    variable_upload = st.multiselect("Variable", options=["Capital Cost", "Fixed O&M","Variable O&M", "Total O&M", "Fuel Price", "Efficiency", "Construction Time", "Lifetime", "Cost of Capital"])
+    year_upload = st.multiselect("Year", options=["2020", "2021", "2022", "2023", "2024", "2025", "2030", "2040", "2050"])
+    
+    # Replace with processed dataframe
+    manual_dataframe = gneste_datafile
+
+    # Call file processor
+    if st.button("Store and Add Additional Manual Upload"):
+        st.write("Data Preview:")
+         # Display the DataFrame
+        st.dataframe(manual_dataframe) 
+
+
+    # Call github updater
+    if st.button("Manual Upload to GNESTE"):
+        try:
+            # Upload the file to GitHub
+            upload_to_github(REPO_NAME, new_file, date_time)
+        except Exception as e:
+            st.error(f"An error occurred: {e}")
+    
+
 with tab6:
     st.header("Changelog")
     changelog = pd.read_csv("./DATA/Changelog.csv")
